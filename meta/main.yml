@@ -1,0 +1,5 @@
+---
+dependencies:
+  - name: geerlingguy.docker
+  - name: community.general
+    version: "2.7.0"

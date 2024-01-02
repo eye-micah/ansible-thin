@@ -1,0 +1,23 @@
+---
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+api:
+  insecure: true
+
+providers:
+  docker:
+    exposedByDefault: false
+
+certificatesResolvers:
+  le:
+    acme:
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      storage: "/etc/traefik/acme/acme.json"
+      dnsChallenge:
+        provider: "duckdns"
+
+      

@@ -1,0 +1,10 @@
+---
+handlers:
+  - name: Restart Traefik container
+    docker_container:
+      name: traefik
+      state: restarted
+
+handlers:
+  - name: Reload Traefik
+    shell: "docker exec traefik traefik reload"

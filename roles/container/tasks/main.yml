@@ -1,0 +1,3 @@
+---
+- name: Include tasks to deploy Traefik and reverse-proxied services
+  include_tasks: deploy_services.yml

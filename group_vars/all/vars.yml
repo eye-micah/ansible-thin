@@ -1,0 +1,15 @@
+---
+username: micah
+
+hostname: thin
+
+container_dir: /opt/docker/data
+container_compose: /opt/docker/compose
+
+shell: /bin/bash
+
+email_address: "your-email@example.com"
+
+domain: "example.com"
+
+timezone: "America/New_York"
