@@ -15,7 +15,7 @@ providers:
 certificatesResolvers:
   le:
     acme:
-      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory # Change this to the non-staging URL once you have a working configuration.
       storage: "/etc/traefik/acme/acme.json"
       dnsChallenge:
         provider: "duckdns"
