@@ -1,10 +1,8 @@
 ---
-handlers:
-  - name: Restart Traefik container
-    docker_container:
-      name: traefik
-      state: restarted
+- name: Restart Traefik container
+  containers.podman.podman_container:
+    name: traefik
+    state: restarted
 
-handlers:
-  - name: Reload Traefik
-    shell: "docker exec traefik traefik reload"
+- name: Reload Traefik
+  shell: "podman exec traefik traefik reload"

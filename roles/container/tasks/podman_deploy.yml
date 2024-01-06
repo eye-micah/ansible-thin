@@ -1,0 +1,69 @@
+---
+
+
+
+- name: Ensure the proper container compose directory is there
+  ansible.builtin.file:
+    path: "{{ container_compose }}"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    state: directory
+  tags: [paths]
+
+- name: Ensure the proper container data directory is there
+  ansible.builtin.file:
+    path: "{{ container_dir }}"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    state: directory
+  tags: [paths]
+
+
+
+
+
+- name: Create Traefik data directory
+  file:
+    path: "{{ container_dir }}/traefik"
+    state: directory
+  
+  loop:
+    - "{{ container_dir }}/traefik"
+
+- name: Copy Traefik configuration template
+  template:
+    src: traefik.yml
+    dest: "{{ container_dir }}/traefik/traefik.yml"
+  notify: Restart Traefik container
+
+- name: Create acme.json file with correct permissions
+  file:
+    path: "{{ container_dir }}/traefik/acme/acme.json"
+    state: touch
+    mode: 0600
+    owner: 101
+    group: 101
+
+- name: Deploy Traefik container
+  containers.podman.podman_container:
+    name: traefik
+    image: traefik
+    volume:
+      - "{{ container_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml:z"
+      - "{{ container_dir }}/traefik/acme:/etc/traefik/acme:z"
+    ports:
+      - "80:80"
+      - "443:443"
+    restart_policy: unless_stopped
+    notify: Reload Traefik
+    env:
+      - DUCKDNS_TOKEN={{ duckdns_token }}
+
+- name: Deploy Whoami example container
+  containers.podman.podman_container:
+    name: whoami
+    image: "whoami:latest"
+    labels:
+      - traefik.enable: "true"
+      - traefik.http.routers.whoami.rule: "Host(`whoami.{{ domain }}`)"
+      - traefik.http.routers.whoami.entrypoints: "web"

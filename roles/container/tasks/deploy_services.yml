@@ -37,8 +37,8 @@
     name: traefik
     image: "traefik:latest"
     volumes:
-      - "{{ container_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml"
-      - "{{ container_dir }}/traefik/acme:/etc/traefik/acme"
+      - "{{ container_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml:z"
+      - "{{ container_dir }}/traefik/acme:/etc/traefik/acme:z"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     ports:
       - "80:80"
@@ -80,8 +80,8 @@
       - "8080:80"
       - "4430:443"
     volumes:
-      - "{{ container_dir }}/pihole/pihole/:/etc/pihole/"
-      - "{{ container_dir }}/pihole/dnsmasq.d/:/etc/dnsmasq.d/"
+      - "{{ container_dir }}/pihole/pihole/:/etc/pihole/:z"
+      - "{{ container_dir }}/pihole/dnsmasq.d/:/etc/dnsmasq.d/:z"
     labels:
       -  traefik.enable: "true"
       -  traefik.http.routers.pihole.rule: "Host(`pihole.{{ domain }}`)"

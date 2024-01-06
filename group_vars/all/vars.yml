@@ -1,10 +1,10 @@
 ---
-username: micah
+username: container
 
 hostname: thin
 
-container_dir: /opt/docker/data
-container_compose: /opt/docker/compose
+container_dir: "/home/{{ username }}/containers/data"
+container_compose: "/home/{{ username }}/containers/compose"
 
 shell: /bin/bash
 
@@ -13,3 +13,9 @@ email_address: "your-email@example.com"
 domain: "example.com"
 
 timezone: "America/New_York"
+
+packages:
+  - vim
+  - htop 
+  - tmux
+  - git

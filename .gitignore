@@ -1,0 +1,4 @@
+group_vars/all/secret.yml
+.vscode
+roles/container/tasks/deploy_services.yml
+hosts

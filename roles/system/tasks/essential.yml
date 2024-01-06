@@ -1,0 +1,17 @@
+---
+#- name: Update packages
+#  dnf:
+#    name: '*'
+#    state: latest
+
+#- name: Install essential packages
+#  dnf:
+#    name: "{{ packages }}"
+
+- name: Allow unprivileged port 80 with rootless podman
+  sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: "80"
+    state: present
+    reload: yes
+    
