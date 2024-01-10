@@ -2,68 +2,123 @@
 
 
 
-- name: Ensure the proper container compose directory is there
+- name: Ensure proper container directories are present.
   ansible.builtin.file:
-    path: "{{ container_compose }}"
+    path: "{{ item }}"
     owner: "{{ username }}"
     group: "{{ username }}"
     state: directory
-  tags: [paths]
-
-- name: Ensure the proper container data directory is there
-  ansible.builtin.file:
-    path: "{{ container_dir }}"
-    owner: "{{ username }}"
-    group: "{{ username }}"
-    state: directory
-  tags: [paths]
-
-
-
-
-
-- name: Create Traefik data directory
-  file:
-    path: "{{ container_dir }}/traefik"
-    state: directory
-  
+    setype: container_file_t
+  become_user: "{{ username }}"
+  become: true
   loop:
-    - "{{ container_dir }}/traefik"
+    - "{{ container_compose }}"
+    - "{{ container_dir }}/traefik/acme"
+    #- "{{ container_dir }}/pihole/etc-pihole"
+    - "{{ container_dir }}/pihole/etc-dnsmasq.d"
+
+
+  
+
 
 - name: Copy Traefik configuration template
   template:
     src: traefik.yml
     dest: "{{ container_dir }}/traefik/traefik.yml"
-  notify: Restart Traefik container
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    setype: container_file_t
+  become_user: "{{ username }}"
+  become: false
+  #notify: Restart Traefik container
 
-- name: Create acme.json file with correct permissions
-  file:
-    path: "{{ container_dir }}/traefik/acme/acme.json"
-    state: touch
-    mode: 0600
-    owner: 101
-    group: 101
+#- name: Create acme.json file with correct permissions
+#  file:
+#    path: "{{ container_dir }}/traefik/acme/acme.json"
+#    state: touch
+#    mode: 0600
+#    owner: 101
+#    group: 101
+#    setype: container_file_t
+#  become: true
 
-- name: Deploy Traefik container
+- name: Run whoami without become
+  command: whoami
+  become: false
+  register: whoami
+
+- name: print whoami
+  debug:
+    var: whoami
+    verbosity: 4
+
+- name: Create a podman network for traefik network services 
+  containers.podman.podman_network:
+    name: traefik-net
+  become: false
+
+
+- name: Deploy traefik container
+  become: false
   containers.podman.podman_container:
     name: traefik
-    image: traefik
-    volume:
-      - "{{ container_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml:z"
+    image: docker.io/library/traefik:latest
+    security_opt:
+      - label=type:container_runtime_t
+    network:
+      - traefik-net
+    volumes: 
+      - "/run/user/1000/podman/podman.sock:/var/run/docker.sock:z"
       - "{{ container_dir }}/traefik/acme:/etc/traefik/acme:z"
+      - "{{ container_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml:z"
     ports:
-      - "80:80"
-      - "443:443"
-    restart_policy: unless_stopped
-    notify: Reload Traefik
+      - "80:80/tcp"
+      - "443:443/tcp"
+      - "8080:8080/tcp"
     env:
-      - DUCKDNS_TOKEN={{ duckdns_token }}
+      DUCKDNS_TOKEN={{ duckdns_token }}
 
-- name: Deploy Whoami example container
+- name: Deploy traefik whoami container
+  become: false
   containers.podman.podman_container:
     name: whoami
-    image: "whoami:latest"
+    image: docker.io/traefik/whoami:latest
+    network: traefik-net
     labels:
-      - traefik.enable: "true"
-      - traefik.http.routers.whoami.rule: "Host(`whoami.{{ domain }}`)"
-      - traefik.http.routers.whoami.entrypoints: "web"
+      traefik.enable: true
+      traefik.http.routers.whoami.rule: Host(`whoami.{{ domain }}`)
+      traefik.http.routers.whoami.entrypoints: websecure
+
+- name: Deploy Pi-hole with traefik labels
+  become: false
+  containers.podman.podman_container:
+    name: pihole 
+    image: docker.io/pihole/pihole:latest
+    network: traefik-net
+    volumes:
+      - "{{ container_dir }}/pihole/etc-pihole:/etc/pihole/:Z"
+      - "{{ container_dir }}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d/:z"
+    ports:
+      - "53:53"
+      - "853:853"
+      - "8081:80"
+    labels:
+      traefik.enable: true
+      traefik.http.routers.pihole.entrypoints: "websecure"
+      traefik.http.routers.pihole.rule: "Host(`pihole.{{ domain }}`)"
+      traefik.http.routers.pihole.middlewares: "pihole-admin"
+      traefik.http.routers.pihole.service: "pihole"
+      traefik.http.routers.pihole.tls: "true"
+      traefik.http.routers.pihole.tls.certresolver: "le"
+
+      traefik.http.middlewares.pihole-admin.addprefix.prefix: "/admin"
+
+      traefik.http.routers.pihole_http.entrypoints: "web"
+      traefik.http.routers.pihole_http.rule: "Host(`pihole.{{ domain }}`)"
+      traefik.http.routers.pihole_http.middlewares: "redirect-to-https"
+
+      traefik.http.services.pihole.loadBalancer.server.port: "80"
+
+    
+
+

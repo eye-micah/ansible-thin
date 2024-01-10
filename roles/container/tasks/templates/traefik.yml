@@ -1,4 +1,8 @@
 ---
+
+global:
+  sendAnonymousUsage: false
+  
 entryPoints:
   web:
     address: ":80"
@@ -10,6 +14,8 @@ api:
 
 providers:
   docker:
+    endpoint: "unix:///var/run/docker.sock"
+    watch: true
     exposedByDefault: false
 
 certificatesResolvers:
