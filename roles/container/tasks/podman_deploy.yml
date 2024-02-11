@@ -1,7 +1,5 @@
 ---
 
-
-
 - name: Ensure proper container directories are present.
   ansible.builtin.file:
     path: "{{ item }}"
@@ -13,88 +11,35 @@
   become: true
   loop:
     - "{{ container_compose }}"
-    - "{{ container_dir }}/traefik/acme"
+    #- "{{ container_dir }}/traefik/acme"
+    - "{{ container_dir }}/nginx"
+    - "{{ container_dir }}/letsencrypt"
     #- "{{ container_dir }}/pihole/etc-pihole"
     - "{{ container_dir }}/pihole/etc-dnsmasq.d"
 
+#- name: Create a podman network for reverse-proxied network services 
+#  containers.podman.podman_network:
+#    name: nginx-net
+#  become: false
 
-  
-
-
-- name: Copy Traefik configuration template
-  template:
-    src: traefik.yml
-    dest: "{{ container_dir }}/traefik/traefik.yml"
-    owner: "{{ username }}"
-    group: "{{ username }}"
-    setype: container_file_t
-  become_user: "{{ username }}"
-  become: false
-  #notify: Restart Traefik container
-
-#- name: Create acme.json file with correct permissions
-#  file:
-#    path: "{{ container_dir }}/traefik/acme/acme.json"
-#    state: touch
-#    mode: 0600
-#    owner: 101
-#    group: 101
-#    setype: container_file_t
-#  become: true
-
-- name: Run whoami without become
-  command: whoami
-  become: false
-  register: whoami
-
-- name: print whoami
-  debug:
-    var: whoami
-    verbosity: 4
-
-- name: Create a podman network for traefik network services 
-  containers.podman.podman_network:
-    name: traefik-net
-  become: false
-
-
-- name: Deploy traefik container
+- name: Deploy Nginx Proxy manager
   become: false
   containers.podman.podman_container:
-    name: traefik
-    image: docker.io/library/traefik:latest
-    security_opt:
-      - label=type:container_runtime_t
-    network:
-      - traefik-net
-    volumes: 
-      - "/run/user/1000/podman/podman.sock:/var/run/docker.sock:z"
-      - "{{ container_dir }}/traefik/acme:/etc/traefik/acme:z"
-      - "{{ container_dir }}/traefik/traefik.yml:/etc/traefik/traefik.yml:z"
+    name: nginx
+    image: docker.io/jc21/nginx-proxy-manager:latest
     ports:
-      - "80:80/tcp"
-      - "443:443/tcp"
-      - "8080:8080/tcp"
-    env:
-      DUCKDNS_TOKEN={{ duckdns_token }}
-
-- name: Deploy traefik whoami container
-  become: false
-  containers.podman.podman_container:
-    name: whoami
-    image: docker.io/traefik/whoami:latest
-    network: traefik-net
-    labels:
-      traefik.enable: true
-      traefik.http.routers.whoami.rule: Host(`whoami.{{ domain }}`)
-      traefik.http.routers.whoami.entrypoints: websecure
+      - '80:80'
+      - '443:443'
+      - '81:81'
+    volumes:
+      - "{{ container_dir }}/nginx:/data:Z"
+      - "{{ container_dir }}/letsencrypt:/etc/letsencrypt:Z"
 
 - name: Deploy Pi-hole with traefik labels
   become: false
   containers.podman.podman_container:
     name: pihole 
     image: docker.io/pihole/pihole:latest
-    network: traefik-net
     volumes:
       - "{{ container_dir }}/pihole/etc-pihole:/etc/pihole/:Z"
       - "{{ container_dir }}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d/:z"
@@ -102,22 +47,7 @@
       - "53:53"
       - "853:853"
       - "8081:80"
-    labels:
-      traefik.enable: true
-      traefik.http.routers.pihole.entrypoints: "websecure"
-      traefik.http.routers.pihole.rule: "Host(`pihole.{{ domain }}`)"
-      traefik.http.routers.pihole.middlewares: "pihole-admin"
-      traefik.http.routers.pihole.service: "pihole"
-      traefik.http.routers.pihole.tls: "true"
-      traefik.http.routers.pihole.tls.certresolver: "le"
 
-      traefik.http.middlewares.pihole-admin.addprefix.prefix: "/admin"
-
-      traefik.http.routers.pihole_http.entrypoints: "web"
-      traefik.http.routers.pihole_http.rule: "Host(`pihole.{{ domain }}`)"
-      traefik.http.routers.pihole_http.middlewares: "redirect-to-https"
-
-      traefik.http.services.pihole.loadBalancer.server.port: "80"
 
     
 
