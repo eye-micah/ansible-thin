@@ -2,3 +2,5 @@ group_vars/all/secret.yml
 .vscode
 roles/container/tasks/deploy_services.yml
 hosts
+roles/container/tasks/templates/cert.pem
+roles/container/tasks/templates/key.pem

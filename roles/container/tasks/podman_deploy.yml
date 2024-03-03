@@ -16,11 +16,23 @@
     - "{{ container_dir }}/letsencrypt"
     #- "{{ container_dir }}/pihole/etc-pihole"
     - "{{ container_dir }}/pihole/etc-dnsmasq.d"
+    - "{{ container_dir }}/vw-vault"
 
 #- name: Create a podman network for reverse-proxied network services 
 #  containers.podman.podman_network:
 #    name: nginx-net
 #  become: false
+
+- name: Create volumes.
+  containers.podman.podman_volume:
+    state: present
+    name: "{{ item }}"
+  loop:
+    - "caddy-config" 
+    - "caddy-logs"
+    - "caddy-data"
+    - "agh-confdir"
+    - "agh-workdir"
 
 - name: Deploy Nginx Proxy manager
   become: false
@@ -35,18 +47,38 @@
       - "{{ container_dir }}/nginx:/data:Z"
       - "{{ container_dir }}/letsencrypt:/etc/letsencrypt:Z"
 
-- name: Deploy Pi-hole with traefik labels
+- name: Deploy AdGuard Home
   become: false
   containers.podman.podman_container:
-    name: pihole 
-    image: docker.io/pihole/pihole:latest
+    name: agh
+    image: docker.io/adguard/adguardhome
     volumes:
-      - "{{ container_dir }}/pihole/etc-pihole:/etc/pihole/:Z"
-      - "{{ container_dir }}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d/:z"
+      - "agh-workdir:/opt/adguardhome/work:z"
+      - "agh-confdir:/opt/adguardhome/conf:z"
     ports:
-      - "53:53"
-      - "853:853"
-      - "8081:80"
+      - '8081:80'
+      - '3000:3000/tcp'
+      - '53:53/tcp'
+      - '53:53/udp'
+      - '853:853/tcp'
+      - '853:853/udp'
+      - '5443:5443/tcp'
+      - '5443:5443/udp'
+      - '6060:6060/tcp'
+
+
+- name: Set up Vaultwarden
+  become: false
+  containers.podman.podman_container:
+    name: vw 
+    image: docker.io/vaultwarden/server:latest
+    volumes:
+      - "{{ container_dir }}/vw-vault:/data/:Z"
+    ports:
+      - "8082:80"
+
+
+    
 
 
     
