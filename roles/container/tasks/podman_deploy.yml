@@ -1,10 +1,11 @@
 ---
 
+
 - name: Ensure proper container directories are present.
   ansible.builtin.file:
     path: "{{ item }}"
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    #owner: "{{ username }}"
+    #group: "{{ username }}"
     state: directory
     setype: container_file_t
   become_user: "{{ username }}"
@@ -13,39 +14,18 @@
     - "{{ container_compose }}"
     #- "{{ container_dir }}/traefik/acme"
     - "{{ container_dir }}/nginx"
-    - "{{ container_dir }}/letsencrypt"
+    - "{{ container_dir }}/letsencrypt/data/dns-conf"
+    - "{{ container_dir }}/adguard-home/conf"
+    - "{{ container_dir }}/adguard-home/work"
     #- "{{ container_dir }}/pihole/etc-pihole"
-    - "{{ container_dir }}/pihole/etc-dnsmasq.d"
-    - "{{ container_dir }}/vw-vault"
+    #- "{{ container_dir }}/pihole/etc-dnsmasq.d"
+    - "{{ container_dir }}/vw-vault/data"
 
 #- name: Create a podman network for reverse-proxied network services 
 #  containers.podman.podman_network:
 #    name: nginx-net
 #  become: false
 
-- name: Create volumes.
-  containers.podman.podman_volume:
-    state: present
-    name: "{{ item }}"
-  loop:
-    - "caddy-config" 
-    - "caddy-logs"
-    - "caddy-data"
-    - "agh-confdir"
-    - "agh-workdir"
-
-- name: Deploy Nginx Proxy manager
-  become: false
-  containers.podman.podman_container:
-    name: nginx
-    image: docker.io/jc21/nginx-proxy-manager:latest
-    ports:
-      - '80:80'
-      - '443:443'
-      - '81:81'
-    volumes:
-      - "{{ container_dir }}/nginx:/data:Z"
-      - "{{ container_dir }}/letsencrypt:/etc/letsencrypt:Z"
 
 - name: Deploy AdGuard Home
   become: false
@@ -53,8 +33,10 @@
     name: agh
     image: docker.io/adguard/adguardhome
     volumes:
-      - "agh-workdir:/opt/adguardhome/work:z"
-      - "agh-confdir:/opt/adguardhome/conf:z"
+      #- "agh-workdir:/opt/adguardhome/work:z"
+      - "{{ container_dir }}/adguard-home/work:/opt/adguardhome/work:z"
+      #- "agh-confdir:/opt/adguardhome/conf:z"
+      - "{{ container_dir }}/adguard-home/conf:/opt/adguardhome/conf:z"
     ports:
       - '8081:80'
       - '3000:3000/tcp'
@@ -73,9 +55,42 @@
     name: vw 
     image: docker.io/vaultwarden/server:latest
     volumes:
-      - "{{ container_dir }}/vw-vault:/data/:Z"
+      - "{{ container_dir }}/vw-vault/data:/data:Z"
     ports:
       - "8082:80"
+
+
+- name: Copy cloudflare.ini Swag configuration (I need a better way to do this)
+  become: false
+  template:
+    src: cloudflare.ini.j2
+    dest: "{{ container_dir }}/letsencrypt/data/dns-conf/cloudflare.ini"
+
+- debug:
+    msg: "Server URL set as {{ server_url }}"
+
+- name: Deploy Linuxserver SWAG with Cloudflare
+  become: false
+  containers.podman.podman_container:
+    name: swag
+    image: lscr.io/linuxserver/swag:latest
+    cap_add: NET_ADMIN
+    env:
+      PUID=1000
+      PGID=1000
+      TZ={{ timezone }}
+      URL={{ server_url }}
+      SUBDOMAINS=wildcard
+      ONLY_SUBDOMAINS=true
+      VALIDATION=dns
+      DNSPLUGIN=cloudflare
+    volumes: "{{ container_dir }}/letsencrypt/data:/config:Z"
+    ports:
+      - 443:443
+      - 80:80
+
+
+
 
 
     

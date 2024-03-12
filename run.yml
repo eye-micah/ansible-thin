@@ -1,8 +1,5 @@
 ---
-- hosts: all
-  become: yes
-  remote_user: micah
-
+- hosts: thin
   roles:
     #- role: system
     #- role: artis3n.tailscale

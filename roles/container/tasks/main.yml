@@ -1,7 +1,4 @@
 ---
-- block: 
-  - name: Include tasks to deploy Traefik and reverse-proxied services
-    include_tasks: podman_deploy.yml
-  become: false
-  become_user: "{{ username }}"
+- include_tasks: podman_deploy.yml
+
 
