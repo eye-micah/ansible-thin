@@ -1,6 +1,0 @@
-vault.devil.bar {
-
-    encode gzip
-
-    reverse_proxy vw:8082
-}

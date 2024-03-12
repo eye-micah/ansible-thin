@@ -1,0 +1,16 @@
+---
+- name: Deploy Caddyfile template
+  template:
+    src: caddy/Caddyfile.j2
+    dest: "{{ caddy_dir }}/Caddyfile"
+
+- name: Deploy Caddy container with Cloudflare DNS
+  containers.podman.podman_container:
+    network: host
+    name: caddy
+    image: docker.io/iarekylew00t/caddy-cloudflare:latest
+    cap_add: NET_ADMIN
+    volumes: 
+      - "{{ caddy_dir }}/Caddyfile:/etc/caddy/Caddyfile:Z"
+      - "{{ caddy_dir }}/config:/config:Z"
+      - "{{ caddy_dir }}/ssl:/etc/ssl:Z"

@@ -1,4 +1,10 @@
 ---
-- include_tasks: podman_deploy.yml
+#- include_tasks: prepare.yml
 
-
+# Rootless podman containers
+#- include_tasks: adguardhome.yml
+#- include_tasks: swag.yml
+#- include_tasks: authelia.yml
+#- include_tasks: vaultwarden.yml
+#- include_tasks: cloudflared.yml
+- include_tasks: caddy.yml

@@ -1,0 +1,8 @@
+---
+- name: Deploy cloudflared container.
+  containers.podman.podman_container:
+    recreate: false
+    network: host
+    name: cloudflared
+    image: docker.io/cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token {{ tunnel_token }}

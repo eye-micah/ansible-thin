@@ -1,0 +1,10 @@
+---
+- name: Set up Vaultwarden
+  become: false
+  containers.podman.podman_container:
+    name: vw 
+    image: docker.io/vaultwarden/server:latest
+    volumes:
+      - "{{ container_dir }}/vw-vault/data:/data:Z"
+    ports:
+      - "8082:80"

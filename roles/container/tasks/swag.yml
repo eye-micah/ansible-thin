@@ -1,0 +1,30 @@
+---
+- name: Copy cloudflare.ini Swag configuration (I need a better way to do this)
+  become: false
+  template:
+    src: swag/cloudflare.ini.j2
+    dest: "{{ container_dir }}/letsencrypt/data/dns-conf/cloudflare.ini"
+
+- debug:
+    msg: "Server URL set as {{ server_url }}"
+
+- name: Deploy Linuxserver SWAG with Cloudflare
+  become: false
+  containers.podman.podman_container:
+    network: swag
+    name: swag
+    image: lscr.io/linuxserver/swag:latest
+    cap_add: NET_ADMIN
+    env:
+      PUID=1000
+      PGID=1000
+      TZ={{ timezone }}
+      URL={{ server_url }}
+      SUBDOMAINS=wildcard
+      ONLY_SUBDOMAINS=true
+      VALIDATION=dns
+      DNSPLUGIN=cloudflare
+    volumes: "{{ container_dir }}/letsencrypt/data:/config:Z"
+    ports:
+      - 443:443
+      - 80:80

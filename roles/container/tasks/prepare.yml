@@ -1,0 +1,43 @@
+---
+- name: Ensure proper container directories are present.
+  ansible.builtin.file:
+    path: "{{ item }}"
+    #owner: "{{ username }}"
+    #group: "{{ username }}"
+    state: directory
+    setype: container_file_t
+  become_user: "{{ username }}"
+  become: true
+  loop:
+    - "{{ container_compose }}"
+    #- "{{ container_dir }}/traefik/acme"
+    - "{{ container_dir }}/nginx"
+    - "{{ container_dir }}/letsencrypt/data/dns-conf"
+    - "{{ container_dir }}/adguard-home/conf"
+    - "{{ container_dir }}/adguard-home/work"
+    #- "{{ container_dir }}/pihole/etc-pihole"
+    #- "{{ container_dir }}/pihole/etc-dnsmasq.d"
+    - "{{ container_dir }}/vw-vault/data"
+    - "{{ container_dir }}/authelia/data"
+    - "{{ container_dir }}/caddy/ssl"
+    - "{{ container_dir }}/caddy/config"
+
+
+
+
+- name: Create podman network for SWAG
+  containers.podman.podman_network:
+    name: swag
+    
+
+
+
+
+
+
+    
+
+
+    
+
+

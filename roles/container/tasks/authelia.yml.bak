@@ -1,0 +1,32 @@
+---
+
+a_config: "{{ container_dir }}/authelia/data"
+
+- name: Ensure Authelia directory present
+  file:
+    path: "{{ a_config }}"
+    state: directory
+    setype: container_file_t
+    owner: "{{ username }}"
+    group: "{{ username }}"
+
+- name: Copy configuration.yml to Authelia directory
+  template:
+    src: authelia/configuration.yml.j2
+    dest: "{{ a_config }}/"
+
+- name: Copy users_database.yml to Authelia directory
+  template:
+    src: authelia/users_database.yml.j2
+    dest: "{{ a_config }}/"
+
+- name: Deploy Authelia 
+  become: false
+  containers.podman.podman_container:
+    network: swag
+    name: authelia
+    image: ghcr.io/authelia/authelia:4.34.6
+    env: TZ={{ timezone }}
+    volumes: "{{ a_config }}:/config:z"
+    restart_policy: "on-failure"
+

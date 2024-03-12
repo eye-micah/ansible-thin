@@ -16,6 +16,9 @@ timezone: "America/New_York"
 
 server_url: "devil.bar"
 
+caddy_dir: "{{ container_dir }}/caddy"
+
+
 packages:
   - vim
   - htop 
