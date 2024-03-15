@@ -20,3 +20,14 @@
       - '5443:5443/udp'
       - '6060:6060/tcp'
 
+- name: Create systemd service
+  containers.podman.podman_generate_systemd:
+    name: agh
+    new: true
+    dest: ~/.config/systemd/user
+
+- name: Enable systemd service
+  systemd:
+    name: container-agh.service
+    enabled: true
+    scope: user

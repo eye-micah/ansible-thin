@@ -6,3 +6,15 @@
     name: cloudflared
     image: docker.io/cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token {{ tunnel_token }}
+
+- name: Create systemd service
+  containers.podman.podman_generate_systemd:
+    name: cloudflared
+    new: true
+    dest: ~/.config/systemd/user
+
+- name: Enable systemd service
+  systemd:
+    name: container-cloudflared.service
+    enabled: true
+    scope: user
